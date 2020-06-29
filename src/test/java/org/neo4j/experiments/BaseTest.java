@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class BaseTest {
 
-	protected static final int REPEAT_COUNT = 4;
+	protected static final int REPEAT_COUNT = 3;
 	protected static final String TEST_LABEL = "Test";
 	protected static final Logger LOG = LoggerFactory.getLogger(BaseTest.class);
 
@@ -63,6 +63,7 @@ public class BaseTest {
 		targetDriver.session(SessionConfig.forDatabase("system"))
 				.run("CREATE OR REPLACE DATABASE " + TARGET_DB_NAME).consume();
 		LOG.info("Created new database: {}", TARGET_DB_NAME);
+		getTargetSession().run("CREATE CONSTRAINT ON (t:" + TEST_LABEL + ") ASSERT t.id IS UNIQUE").consume();
 		sourceNodesCount = sourceDriver.session().run("MATCH (n) RETURN count(n) as cnt").single().get("cnt").asInt();
 		startTime = System.currentTimeMillis();
 	}
