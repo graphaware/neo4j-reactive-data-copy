@@ -22,13 +22,14 @@ import org.slf4j.LoggerFactory;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class BaseTest {
 
-	protected static final int REPEAT_COUNT = 3;
+	protected static final int REPEAT_COUNT = 5;
 	protected static final String TEST_LABEL = "Test";
 	protected static final Logger LOG = LoggerFactory.getLogger(BaseTest.class);
 
 	protected static final int WRITER_THREAD_COUNT = 4;
 
 	protected static final String READ_QUERY = "MATCH (n) RETURN n";
+	protected static final String WRITE_QUERY = "UNWIND $entries as entry CREATE (n:" + TEST_LABEL + ") SET n = entry";
 
 	private static final AuthToken AUTH_TOKEN = AuthTokens.basic("neo4j", "pass");
 	private static final Config DRIVER_CONFIG = Config.builder()
@@ -57,19 +58,19 @@ public class BaseTest {
 	}
 
 	@BeforeEach
-	void cleanupDb() {
+	void cleanupAndPrepareTest() {
 		LOG.info("Starting {}", this.getClass().getSimpleName());
 		LOG.info("Cleaning up target DB");
 		targetDriver.session(SessionConfig.forDatabase("system"))
 				.run("CREATE OR REPLACE DATABASE " + TARGET_DB_NAME).consume();
 		LOG.info("Created new database: {}", TARGET_DB_NAME);
-		getTargetSession().run("CREATE CONSTRAINT ON (t:" + TEST_LABEL + ") ASSERT t.id IS UNIQUE").consume();
+		getTargetSession().run("CREATE CONSTRAINT ON (t:Test) ASSERT t.id IS UNIQUE").consume();
 		sourceNodesCount = sourceDriver.session().run("MATCH (n) RETURN count(n) as cnt").single().get("cnt").asInt();
 		startTime = System.currentTimeMillis();
 	}
 
 	@AfterEach
-	void checkCount() {
+	void checkNodesCount() {
 		LOG.info("Completed {} in {} ms", this.getClass().getSimpleName(), System.currentTimeMillis() - startTime);
 		int targetNodesCount = getTargetSession().run("MATCH (n) RETURN count(n) as cnt").single().get("cnt").asInt();
 		assertEquals(sourceNodesCount, targetNodesCount);

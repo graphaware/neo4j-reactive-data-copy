@@ -39,16 +39,16 @@ public class BlockingQueueTest extends BaseTest {
 				.peek(Thread::start)
 				.collect(Collectors.toList());
 
-		readNodesAndEnqueue(READ_QUERY);
+		readNodesAndEnqueue();
 
 		for (Thread thread : threads) {
 			thread.join();
 		}
 	}
 
-	private void readNodesAndEnqueue(String query) {
+	private void readNodesAndEnqueue() {
 		try (Session session = sourceDriver.session()) {
-			session.run(query)
+			session.run(READ_QUERY)
 					.stream()
 					.map(record -> record.get(0).asNode())
 					.forEach(this::enqueue);
@@ -97,11 +97,9 @@ public class BlockingQueueTest extends BaseTest {
 
 		private void writeNodes(Collection<Node> entries) {
 
-			String query = "UNWIND $entries as entry CREATE (n:" + TEST_LABEL + ") SET n = entry";
-
 			try (Session session = getTargetSession()) {
 				List<Map<String, Object>> mapStream = entries.stream().map(MapAccessor::asMap).collect(toList());
-				session.writeTransaction(w -> w.run(query, parameters("entries", mapStream))).consume();
+				session.writeTransaction(w -> w.run(WRITE_QUERY, parameters("entries", mapStream))).consume();
 			}
 			System.out.print("W");
 		}

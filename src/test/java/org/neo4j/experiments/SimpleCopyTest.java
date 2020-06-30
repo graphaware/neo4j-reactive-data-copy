@@ -27,21 +27,19 @@ public class SimpleCopyTest extends BaseTest {
 						nodesBuffer.add(node);
 						if (nodesBuffer.size() == BATCH_SIZE) {
 							System.out.print('r');
-							writeNodes(TEST_LABEL, nodesBuffer);
+							writeNodes(nodesBuffer);
 							nodesBuffer.clear();
 						}
 					});
-			writeNodes(TEST_LABEL, nodesBuffer);
+			writeNodes(nodesBuffer);
 		}
 	}
 
-	private void writeNodes(String label, Collection<Node> entries) {
-
-		String query = "UNWIND $entries as entry CREATE (n:" + label + ") SET n = entry";
+	private void writeNodes(Collection<Node> entries) {
 
 		try (Session session = getTargetSession()) {
 			List<Map<String, Object>> mapStream = entries.stream().map(MapAccessor::asMap).collect(toList());
-			session.writeTransaction(w -> w.run(query, parameters("entries", mapStream))).consume();
+			session.writeTransaction(w -> w.run(WRITE_QUERY, parameters("entries", mapStream))).consume();
 		}
 		System.out.print("W");
 	}
