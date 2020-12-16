@@ -11,7 +11,7 @@
 
     <properties>
         <java.version>13</java.version>
-        <neo4j-java-driver.version>4.1.0</neo4j-java-driver.version>
+        <neo4j-java-driver.version>4.1.1</neo4j-java-driver.version>
         <logback-classic.version>1.2.3</logback-classic.version>
         <junit-jupiter.version>5.6.2</junit-jupiter.version>
         <reactor-bom.version>Dysprosium-SR8</reactor-bom.version>
@@ -83,7 +83,7 @@
                 <!-- JUnit 5 requires Surefire version 2.22.0 or higher -->
                 <version>2.22.0</version>
                 <configuration>
-                    <argLine>-Xmx32M -XX:+AllowRedefinitionToAddDeleteMethods -agentpath:/Applications/YourKit-Java-Profiler-2019.8.app/Contents/Resources/bin/mac/libyjpagent.dylib</argLine>
+                    <argLine>-Xmx32M -XX:+AllowRedefinitionToAddDeleteMethods</argLine>
                 </configuration>
             </plugin>
         </plugins>

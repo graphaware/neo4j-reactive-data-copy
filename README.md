@@ -3,8 +3,11 @@
 - Create some test data using
 
 ```
-call apoc.periodic.iterate("UNWIND range(1, 1000000) as i RETURN i", "CREATE (n:Test{id:'node id ' + i, data: i + 'test data test data test data ' + i})", {batchSize:10000})
-yield batches, total return batches, total
+CREATE OR REPLACE DATABASE mytestdb;
+:use mytestdb;
+CREATE INDEX TestIdIdx IF NOT EXISTS FOR (t:Test) ON (t.id);
+CALL apoc.periodic.iterate("UNWIND range(1, 1000000) as i RETURN i", 
+"CREATE (n:Test{id:'node id ' + i, data: apoc.text.random(1000)})", {batchSize:10000});
 ```
 
 - `mvn test`

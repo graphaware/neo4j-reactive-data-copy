@@ -26,7 +26,7 @@ public class BlockingQueueTest extends BaseTest {
 
 	private static final Logger LOG = LoggerFactory.getLogger(BlockingQueueTest.class);
 
-	private final BlockingQueue<Node> queue = new LinkedBlockingQueue<>(BATCH_SIZE * WRITER_THREAD_COUNT);
+	private final BlockingQueue<Node> queue = new LinkedBlockingQueue<>(BATCH_SIZE * 2);
 	private final Node poisonPill = new InternalNode(-1);
 	private final AtomicInteger readCount = new AtomicInteger();
 
@@ -47,7 +47,7 @@ public class BlockingQueueTest extends BaseTest {
 	}
 
 	private void readNodesAndEnqueue() {
-		try (Session session = sourceDriver.session()) {
+		try (Session session = getSourceSession()) {
 			session.run(READ_QUERY)
 					.stream()
 					.map(record -> record.get(0).asNode())
@@ -59,7 +59,7 @@ public class BlockingQueueTest extends BaseTest {
 	private void enqueue(Node node) {
 		var count = readCount.incrementAndGet();
 		if (count % BATCH_SIZE == 0)
-			System.out.print('r');
+			logBatchRead();
 		try {
 			queue.put(node);
 		} catch (InterruptedException ignore) {
@@ -77,13 +77,13 @@ public class BlockingQueueTest extends BaseTest {
 
 		@Override
 		public void run() {
-			boolean stop = false;
+			boolean poisonPillReceived = false;
 			Collection<Node> nodesToWrite = new HashSet<>(BATCH_SIZE);
-			while (!stop) {
+			while (!poisonPillReceived) {
 				nodesToWrite.clear();
 				queue.drainTo(nodesToWrite, BATCH_SIZE);
 				if (nodesToWrite.contains(poisonPill)) {
-					stop = true;
+					poisonPillReceived = true;
 					nodesToWrite.remove(poisonPill);
 					queue.add(poisonPill);
 				}
@@ -101,7 +101,7 @@ public class BlockingQueueTest extends BaseTest {
 				List<Map<String, Object>> mapStream = entries.stream().map(MapAccessor::asMap).collect(toList());
 				session.writeTransaction(w -> w.run(WRITE_QUERY, parameters("entries", mapStream))).consume();
 			}
-			System.out.print("W");
+			logBatchWrite();
 		}
 	}
 }

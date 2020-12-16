@@ -26,6 +26,7 @@ public class BaseTest {
 	protected static final String TEST_LABEL = "Test";
 	protected static final Logger LOG = LoggerFactory.getLogger(BaseTest.class);
 
+	//	protected static final int WRITER_THREAD_COUNT = Runtime.getRuntime().availableProcessors() - 1;
 	protected static final int WRITER_THREAD_COUNT = 4;
 
 	protected static final String READ_QUERY = "MATCH (n) RETURN n";
@@ -33,10 +34,11 @@ public class BaseTest {
 
 	private static final AuthToken AUTH_TOKEN = AuthTokens.basic("neo4j", "pass");
 	private static final Config DRIVER_CONFIG = Config.builder()
-//			.withMaxConnectionPoolSize(WRITER_THREAD_COUNT + 1)
-//			.withEventLoopThreads(WRITER_THREAD_COUNT + 1)
+			.withMaxConnectionPoolSize(WRITER_THREAD_COUNT)
+			.withEventLoopThreads(WRITER_THREAD_COUNT * 2)
 //			.withFetchSize(50)
 			.build();
+	private static final String SOURCE_DB_NAME = "myTestDb";
 	private static final String TARGET_DB_NAME = "myTestDb";
 	protected Driver sourceDriver;
 	protected Driver targetDriver;
@@ -59,13 +61,13 @@ public class BaseTest {
 
 	@BeforeEach
 	void cleanupAndPrepareTest() {
-		LOG.info("Starting {}", this.getClass().getSimpleName());
+		LOG.info("Starting {} with {} writer threads", this.getClass().getSimpleName(), WRITER_THREAD_COUNT);
 		LOG.info("Cleaning up target DB");
 		targetDriver.session(SessionConfig.forDatabase("system"))
 				.run("CREATE OR REPLACE DATABASE " + TARGET_DB_NAME).consume();
 		LOG.info("Created new database: {}", TARGET_DB_NAME);
 		getTargetSession().run("CREATE CONSTRAINT ON (t:Test) ASSERT t.id IS UNIQUE").consume();
-		sourceNodesCount = sourceDriver.session().run("MATCH (n) RETURN count(n) as cnt").single().get("cnt").asInt();
+		sourceNodesCount = getSourceSession().run("MATCH (n) RETURN count(n) as cnt").single().get("cnt").asInt();
 		startTime = System.currentTimeMillis();
 	}
 
@@ -76,11 +78,31 @@ public class BaseTest {
 		assertEquals(sourceNodesCount, targetNodesCount);
 	}
 
+	public Session getSourceSession() {
+		return sourceDriver.session(SessionConfig.forDatabase(SOURCE_DB_NAME));
+	}
+
+	public Supplier<RxSession> getSourceRxSession() {
+		return () -> sourceDriver.rxSession(SessionConfig.forDatabase(SOURCE_DB_NAME));
+	}
+
 	protected Session getTargetSession() {
 		return targetDriver.session(SessionConfig.forDatabase(TARGET_DB_NAME));
 	}
 
 	protected Supplier<RxSession> getTargetRxSession() {
 		return () -> targetDriver.rxSession(SessionConfig.forDatabase(TARGET_DB_NAME));
+	}
+
+	private static final String ANSI_RESET = "\u001B[0m";
+	private static final String ANSI_PURPLE = "\u001B[35m";
+	private static final String ANSI_RED = "\u001B[31m";
+
+	protected void logBatchWrite() {
+		System.out.print(ANSI_RED + "W" + ANSI_RESET);
+	}
+
+	protected void logBatchRead() {
+		System.out.print(ANSI_PURPLE + 'r' + ANSI_RESET);
 	}
 }

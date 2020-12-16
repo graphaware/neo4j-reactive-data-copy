@@ -26,7 +26,7 @@ public class SimpleCopyTest extends BaseTest {
 					.forEach(node -> {
 						nodesBuffer.add(node);
 						if (nodesBuffer.size() == BATCH_SIZE) {
-							System.out.print('r');
+							logBatchRead();
 							writeNodes(nodesBuffer);
 							nodesBuffer.clear();
 						}
@@ -41,7 +41,7 @@ public class SimpleCopyTest extends BaseTest {
 			List<Map<String, Object>> mapStream = entries.stream().map(MapAccessor::asMap).collect(toList());
 			session.writeTransaction(w -> w.run(WRITE_QUERY, parameters("entries", mapStream))).consume();
 		}
-		System.out.print("W");
+		logBatchWrite();
 	}
 
 }
