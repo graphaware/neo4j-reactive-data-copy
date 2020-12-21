@@ -7,19 +7,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.types.MapAccessor;
 import org.neo4j.driver.types.Node;
 
 public class SimpleCopyTest extends BaseTest {
 
-	@RepeatedTest(REPEAT_COUNT)
+	@Test
 	void copyAllNodes() {
 
 		List<Node> nodesBuffer = new ArrayList<>(BATCH_SIZE);
 
-		try (Session session = sourceDriver.session()) {
+		try (Session session = sourceDriver.session(SessionConfig.forDatabase(SOURCE_DB_NAME))) {
 			session.run(READ_QUERY)
 					.stream()
 					.map(record -> record.get(0).asNode())

@@ -22,23 +22,23 @@ import org.slf4j.LoggerFactory;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class BaseTest {
 
-	protected static final int REPEAT_COUNT = 5;
+	protected static final int REPEAT_COUNT = 3;
 	protected static final String TEST_LABEL = "Test";
 	protected static final Logger LOG = LoggerFactory.getLogger(BaseTest.class);
 
-	//	protected static final int WRITER_THREAD_COUNT = Runtime.getRuntime().availableProcessors() - 1;
-	protected static final int WRITER_THREAD_COUNT = 4;
+	//	protected static final int WRITER_CONCURRENCY = Runtime.getRuntime().availableProcessors() - 1;
+	protected static final int WRITER_CONCURRENCY = 4;
 
 	protected static final String READ_QUERY = "MATCH (n) RETURN n";
-	protected static final String WRITE_QUERY = "UNWIND $entries as entry CREATE (n:" + TEST_LABEL + ") SET n = entry";
+	protected static final String WRITE_QUERY = "UNWIND $entries as entry CREATE (n:" + TEST_LABEL + " {id:entry.id}) SET n = entry";
 
 	private static final AuthToken AUTH_TOKEN = AuthTokens.basic("neo4j", "pass");
 	private static final Config DRIVER_CONFIG = Config.builder()
-			.withMaxConnectionPoolSize(WRITER_THREAD_COUNT)
-			.withEventLoopThreads(WRITER_THREAD_COUNT * 2)
+			.withMaxConnectionPoolSize(WRITER_CONCURRENCY)
+			.withEventLoopThreads(WRITER_CONCURRENCY * 2)
 //			.withFetchSize(50)
 			.build();
-	private static final String SOURCE_DB_NAME = "myTestDb";
+	protected static final String SOURCE_DB_NAME = "myTestDb";
 	private static final String TARGET_DB_NAME = "myTestDb";
 	protected Driver sourceDriver;
 	protected Driver targetDriver;
@@ -61,12 +61,13 @@ public class BaseTest {
 
 	@BeforeEach
 	void cleanupAndPrepareTest() {
-		LOG.info("Starting {} with {} writer threads", this.getClass().getSimpleName(), WRITER_THREAD_COUNT);
+		LOG.info("Starting {} with {} writer threads", this.getClass().getSimpleName(), WRITER_CONCURRENCY);
 		LOG.info("Cleaning up target DB");
 		targetDriver.session(SessionConfig.forDatabase("system"))
 				.run("CREATE OR REPLACE DATABASE " + TARGET_DB_NAME).consume();
 		LOG.info("Created new database: {}", TARGET_DB_NAME);
 		getTargetSession().run("CREATE CONSTRAINT ON (t:Test) ASSERT t.id IS UNIQUE").consume();
+		getTargetSession().run("CALL db.awaitIndexes()").consume();
 		sourceNodesCount = getSourceSession().run("MATCH (n) RETURN count(n) as cnt").single().get("cnt").asInt();
 		startTime = System.currentTimeMillis();
 	}
@@ -95,7 +96,7 @@ public class BaseTest {
 	}
 
 	private static final String ANSI_RESET = "\u001B[0m";
-	private static final String ANSI_PURPLE = "\u001B[35m";
+	private static final String ANSI_CYAN = "\u001b[36m";
 	private static final String ANSI_RED = "\u001B[31m";
 
 	protected void logBatchWrite() {
@@ -103,6 +104,6 @@ public class BaseTest {
 	}
 
 	protected void logBatchRead() {
-		System.out.print(ANSI_PURPLE + 'r' + ANSI_RESET);
+		System.out.print(ANSI_CYAN + 'r' + ANSI_RESET);
 	}
 }

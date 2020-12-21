@@ -34,7 +34,7 @@ public class BlockingQueueTest extends BaseTest {
 	void copyAllNodes() throws InterruptedException {
 
 		queue.clear();
-		List<Thread> threads = IntStream.range(0, WRITER_THREAD_COUNT)
+		List<Thread> threads = IntStream.range(0, WRITER_CONCURRENCY)
 				.mapToObj(i -> new Thread(new EntryWriter(queue), "Writer thread " + i))
 				.peek(Thread::start)
 				.collect(Collectors.toList());
